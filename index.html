@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Perjalanan Balon Pixel 500KM - Totem & Revive Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050508;
+            font-family: 'Press Start 2P', cursive;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* BAR ATAS */
+        .top-bar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 15;
+            pointer-events: auto;
+        }
+
+        .user-badge {
+            background: rgba(0, 0, 0, 0.7);
+            color: #2ecc71;
+            border: 2px solid #fff;
+            padding: 6px 10px;
+            font-size: 8px;
+            border-radius: 4px;
+        }
+
+        .top-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .top-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 6px 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            box-shadow: 2px 2px #000;
+        }
+
+        .top-btn:active {
+            transform: translate(1px, 1px);
+        }
+
+        .top-btn-lb { background: #f1c40f; color: #000; }
+        .top-btn-setting { background: #9b59b6; color: #fff; }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            text-shadow: 2px 2px #000;
+            font-size: 9px;
+            z-index: 5;
+            gap: 4px;
+            margin-top: 35px;
+        }
+
+        .hud-item {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 8px;
+            border: 2px solid #fff;
+            border-radius: 4px;
+        }
+
+        .item-bar {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            pointer-events: auto;
+            z-index: 6;
+            max-width: 95%;
+            overflow-x: auto;
+            padding: 4px;
+        }
+
+        .item-btn {
+            background: #2980b9;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 6px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            cursor: pointer;
+            box-shadow: 2px 2px #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 12, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            pointer-events: auto;
+            text-align: center;
+            padding: 15px;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #f1c40f;
+            text-shadow: 3px 3px #c0392b;
+            line-height: 1.4;
+        }
+
+        p {
+            font-size: 8px;
+            margin-bottom: 15px;
+            max-width: 320px;
+            line-height: 1.8;
+            color: #ecf0f1;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 220px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            background: #2ecc71;
+            color: #fff;
+            border: 3px solid #fff;
+            box-shadow: 3px 3px #000;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            border-color: #95a5a6;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px #000;
+        }
+
+        .btn-shop { background: #f1c40f; color: #000; }
+        .btn-setting { background: #9b59b6; }
+        .btn-retry { background: #e74c3c; }
+        .btn-menu { background: #3498db; }
+        .btn-revive { background: #2ecc71; color: #fff; }
+
+        .hidden { display: none !important; }
+
+        /* MODAL STYLES */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.96);
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-title {
+            color: #f1c40f;
+            font-size: 12px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px #c0392b;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 260px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-size: 7px;
+            color: #bdc3c7;
+            margin-bottom: 4px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            padding: 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            background: #1e272e;
+            border: 2px solid #34495e;
+            color: #fff;
+            outline: none;
+        }
+
+        .form-group input[type="range"] {
+            accent-color: #2ecc71;
+            cursor: pointer;
+        }
+
+        /* LEADERBOARD SLIDER */
+        .lb-container {
+            width: 100%;
+            max-width: 280px;
+            background: #1e272e;
+            border: 2px solid #fff;
+            padding: 10px;
+            box-shadow: 4px 4px #000;
+        }
+
+        .lb-tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 6px;
+        }
+
+        .lb-tab {
+            font-size: 7px;
+            color: #7f8c8d;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .lb-tab.active {
+            color: #f1c40f;
+            border-bottom: 2px solid #f1c40f;
+        }
+
+        .lb-list {
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .lb-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 7px;
+            padding: 6px 0;
+            border-bottom: 1px dashed #34495e;
+        }
+
+        .lb-item:nth-child(1) { color: #f1c40f; }
+        .lb-item:nth-child(2) { color: #bdc3c7; }
+        .lb-item:nth-child(3) { color: #e67e22; }
+
+        /* SHOP STYLES */
+        .shop-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.98);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #fff;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .shop-items-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .shop-item-card {
+            background: #1e272e;
+            border: 2px solid #34495e;
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 65%;
+        }
+
+        .item-name { font-size: 7px; color: #f1c40f; }
+        .item-desc { font-size: 6px; color: #bdc3c7; line-height: 1.3; }
+
+        .item-buy-btn {
+            background: #2ecc71;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 6px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6px;
+            cursor: pointer;
+        }
+
+        .item-buy-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            border-color: #95a5a6;
+        }
+
+        #heaven-screen {
+            background: radial-gradient(circle, #ffffff 0%, #fff6c1 60%, #87ceeb 100%);
+            color: #d4af37;
+        }
+        #heaven-screen h1 { color: #d4af37; font-size: 18px; }
+        #heaven-screen p { color: #555; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- BAR ATAS -->
+        <div class="top-bar">
+            <div class="user-badge" id="user-display">GUEST</div>
+            <div class="top-btn-group">
+                <button class="top-btn top-btn-setting" onclick="openSettings()">⚙️ Setting</button>
+                <button class="top-btn top-btn-lb" onclick="openLeaderboard()">🏆 Peringkat</button>
+                <button class="top-btn" id="auth-btn" onclick="openAuthModal()">Register</button>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="ui-layer">
+            <div class="hud" id="hud" style="display: none;">
+                <div class="hud-item" id="dist-ui">0 M</div>
+                <div class="hud-item" id="coin-ui">🪙 0</div>
+                <div class="hud-item" id="stage-ui">STAGE 1</div>
+            </div>
+
+            <div class="item-bar hidden" id="item-bar"></div>
+        </div>
+
+        <!-- MAIN MENU -->
+        <div id="start-screen" class="screen">
+            <h1>PERJALANAN BALON<br>KE SURGA</h1>
+            <p>Terbang hingga 500.000 Meter (500 KM).<br>Beli item di Toko untuk membantumu!</p>
+            <p style="color: #2ecc71;" id="menu-coins-display">KOIN: 0</p>
+            
+            <div class="btn-group">
+                <button class="btn" onclick="startGame()">PLAY ▶</button>
+                <button class="btn btn-shop" onclick="openShop()">TOKO / SHOP 🛒</button>
+                <button class="btn btn-setting" onclick="openSettings()">SETTINGS ⚙️</button>
+            </div>
+        </div>
+
+        <!-- MODAL SETTING & REDEEM CODE -->
+        <div id="setting-modal" class="modal hidden">
+            <div class="modal-title">PENGATURAN SUARA & REDEEM</div>
+
+            <div class="form-group">
+                <label id="label-bgm">VOLUME BACKSOUND (100%):</label>
+                <input type="range" id="vol-bgm" min="0" max="100" value="100" oninput="updateAudioSettings()">
+            </div>
+
+            <div class="form-group">
+                <label id="label-sfx">VOLUME EFEK RINTANGAN (100%):</label>
+                <input type="range" id="vol-sfx" min="0" max="100" value="100" oninput="updateAudioSettings()">
+            </div>
+
+            <div style="border-top: 2px dashed #34495e; width: 100%; max-width: 260px; margin: 10px 0;"></div>
+
+            <div class="form-group">
+                <label>KODE REDEEM:</label>
+                <input type="text" id="redeem-code-input" placeholder="MASUKKAN KODE">
+            </div>
+
+            <p id="redeem-msg" style="font-size: 7px; margin-bottom: 10px; min-height: 12px;"></p>
+
+            <div class="btn-group">
+                <button class="btn" style="background: #f39c12;" onclick="handleRedeemCode()">TUKAR KODE 🎁</button>
+                <button class="btn btn-retry" onclick="closeSettings()">TUTUP</button>
+            </div>
+        </div>
+
+        <!-- AUTH MODAL (REGISTER / LOGIN) -->
+        <div id="auth-modal" class="modal hidden">
+            <div class="modal-title" id="auth-title">REGISTER AKUN</div>
+            
+            <div class="form-group">
+                <label>USERNAME:</label>
+                <input type="text" id="auth-username" placeholder="user123">
+            </div>
+            <div class="form-group">
+                <label>DISPLAY NAME:</label>
+                <input type="text" id="auth-displayname" placeholder="Pemain Balon">
+            </div>
+            <div class="form-group">
+                <label>PASSWORD:</label>
+                <input type="password" id="auth-password" placeholder="***">
+            </div>
+
+            <p id="auth-error" style="color: #e74c3c; font-size: 7px; margin-bottom: 10px; min-height: 12px;"></p>
+
+            <div class="btn-group">
+                <button class="btn" onclick="handleAuthSubmit()">SIMPAN & LOGIN</button>
+                <button class="btn btn-menu" onclick="toggleAuthMode()" id="toggle-auth-btn">Ke Login</button>
+                <button class="btn btn-retry" onclick="closeAuthModal()">BATAL</button>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD MODAL -->
+        <div id="lb-modal" class="modal hidden">
+            <div class="modal-title">PAPAN PERINGKAT</div>
+            
+            <div class="lb-container">
+                <div class="lb-tabs">
+                    <div class="lb-tab active" id="tab-height" onclick="switchLbTab('height')">1. REKOR TINGGI</div>
+                    <div class="lb-tab" id="tab-coins" onclick="switchLbTab('coins')">2. UANG TERBANYAK</div>
+                </div>
+
+                <div class="lb-list" id="lb-list-content">
+                    <div style="font-size: 7px; text-align: center; color: #888;">Memuat data...</div>
+                </div>
+            </div>
+
+            <button class="btn btn-retry" style="margin-top: 15px;" onclick="closeLeaderboard()">TUTUP</button>
+        </div>
+
+        <!-- SHOP MODAL -->
+        <div id="shop-screen" class="shop-modal hidden">
+            <div class="shop-header">
+                <span class="shop-title" style="font-size: 12px; color: #f1c40f;">TOKO BALON</span>
+                <span class="shop-coins" id="shop-coins-display" style="font-size: 9px; color: #2ecc71;">🪙 0</span>
+            </div>
+            <div class="shop-items-container" id="shop-items-list"></div>
+            <button class="btn btn-retry" style="margin-top: 10px; width: 100%;" onclick="closeShop()">KEMBALI</button>
+        </div>
+
+        <!-- GAME OVER SCREEN -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1 style="color: #e74c3c; text-shadow: 3px 3px #8e44ad;">BALON MELEDAK!</h1>
+            <p id="final-dist">Ketinggian: 0 Meter</p>
+            <p id="final-coins" style="color: #f1c40f;">+0 Koin Didapat!</p>
+            
+            <div class="btn-group">
+                <button class="btn btn-revive" id="revive-btn" onclick="attemptRevive()">HIDUP LAGI (2.000 🪙)</button>
+                <button class="btn btn-retry" onclick="resetGame()">COBA LAGI 🔄</button>
+                <button class="btn btn-menu" onclick="showMainMenu()">MENU UTAMA 🏠</button>
+            </div>
+        </div>
+
+        <!-- WIN SCREEN -->
+        <div id="heaven-screen" class="screen hidden">
+            <h1>SELAMAT DATANG<br>DI SURGA</h1>
+            <p>Kamu telah mencapai batas 500.000 Meter (500 KM) dengan selamat!</p>
+            <button class="btn" style="background: #f1c40f; color: #000;" onclick="showMainMenu()">MAIN LAGI</button>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDK (MODULAR v11) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaHtD6IlqKLu7PVRlsNeTuXJl5JsRV_ks",
+            authDomain: "twiterkicau.firebaseapp.com",
+            databaseURL: "https://twiterkicau-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "twiterkicau",
+            storageBucket: "twiterkicau.firebasestorage.app",
+            messagingSenderId: "423712004655",
+            appId: "1:423712004655:web:690c04b6e65d864e1ac4da",
+            measurementId: "G-NLCSGT0KPK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.currentUser = JSON.parse(localStorage.getItem('balon_user_session')) || null;
+        window.isRegisterMode = true;
+        window.activeLbTab = 'height';
+
+        function updateAuthUI() {
+            const userBtn = document.getElementById('user-display');
+            const authBtn = document.getElementById('auth-btn');
+            if (window.currentUser) {
+                userBtn.innerText = "👤 " + window.currentUser.displayName;
+                authBtn.innerText = "Logout";
+                authBtn.onclick = logoutUser;
+            } else {
+                userBtn.innerText = "GUEST";
+                authBtn.innerText = "Register";
+                authBtn.onclick = openAuthModal;
+            }
+        }
+
+        window.openAuthModal = function() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-error').innerText = '';
+        };
+
+        window.closeAuthModal = function() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        };
+
+        window.toggleAuthMode = function() {
+            window.isRegisterMode = !window.isRegisterMode;
+            const title = document.getElementById('auth-title');
+            const btn = document.getElementById('toggle-auth-btn');
+            const dispGroup = document.getElementById('auth-displayname').parentElement;
+
+            if (window.isRegisterMode) {
+                title.innerText = "REGISTER AKUN";
+                btn.innerText = "Ke Login";
+                dispGroup.style.display = "flex";
+            } else {
+                title.innerText = "LOGIN AKUN";
+                btn.innerText = "Ke Register";
+                dispGroup.style.display = "none";
+            }
+        };
+
+        window.handleAuthSubmit = async function() {
+            const username = document.getElementById('auth-username').value.trim().toLowerCase();
+            const password = document.getElementById('auth-password').value.trim();
+            const displayName = document.getElementById('auth-displayname').value.trim();
+            const errorEl = document.getElementById('auth-error');
+
+            if (!username || !password) {
+                errorEl.innerText = "Isi username & password!";
+                return;
+            }
+
+            const userRef = ref(db, 'users/' + username);
+
+            try {
+                const snapshot = await get(userRef);
+                if (window.isRegisterMode) {
+                    if (snapshot.exists()) {
+                        errorEl.innerText = "Username sudah terpakai!";
+                        return;
+                    }
+                    if (!displayName) {
+                        errorEl.innerText = "Isi Display Name!";
+                        return;
+                    }
+
+                    const userData = {
+                        username: username,
+                        displayName: displayName,
+                        password: password,
+                        maxHeight: 0,
+                        totalCoins: window.totalCoins || 0
+                    };
+
+                    await set(userRef, userData);
+                    window.currentUser = userData;
+                } else {
+                    if (!snapshot.exists()) {
+                        errorEl.innerText = "Username tidak ditemukan!";
+                        return;
+                    }
+                    const userData = snapshot.val();
+                    if (userData.password !== password) {
+                        errorEl.innerText = "Password salah!";
+                        return;
+                    }
+                    window.currentUser = userData;
+                    if (userData.totalCoins > window.totalCoins) {
+                        window.totalCoins = userData.totalCoins;
+                        window.updateCoinsUI();
+                    }
+                }
+
+                localStorage.setItem('balon_user_session', JSON.stringify(window.currentUser));
+                updateAuthUI();
+                closeAuthModal();
+            } catch (e) {
+                errorEl.innerText = "Terjadi kesalahan koneksi!";
+                console.error(e);
+            }
+        };
+
+        function logoutUser() {
+            window.currentUser = null;
+            localStorage.removeItem('balon_user_session');
+            updateAuthUI();
+        }
+
+        window.openLeaderboard = function() {
+            document.getElementById('lb-modal').classList.remove('hidden');
+            fetchLeaderboardData();
+        };
+
+        window.closeLeaderboard = function() {
+            document.getElementById('lb-modal').classList.add('hidden');
+        };
+
+        window.switchLbTab = function(tab) {
+            window.activeLbTab = tab;
+            document.getElementById('tab-height').className = 'lb-tab ' + (tab === 'height' ? 'active' : '');
+            document.getElementById('tab-coins').className = 'lb-tab ' + (tab === 'coins' ? 'active' : '');
+            fetchLeaderboardData();
+        };
+
+        async function fetchLeaderboardData() {
+            const listEl = document.getElementById('lb-list-content');
+            listEl.innerHTML = '<div style="font-size:7px; text-align:center; color:#888;">Memuat...</div>';
+
+            try {
+                const snapshot = await get(ref(db, 'users'));
+                if (!snapshot.exists()) {
+                    listEl.innerHTML = '<div style="font-size:7px; text-align:center;">Belum ada data.</div>';
+                    return;
+                }
+
+                let users = [];
+                snapshot.forEach(childSnap => {
+                    users.push(childSnap.val());
+                });
+
+                if (window.activeLbTab === 'height') {
+                    users.sort((a, b) => (b.maxHeight || 0) - (a.maxHeight || 0));
+                } else {
+                    users.sort((a, b) => (b.totalCoins || 0) - (a.totalCoins || 0));
+                }
+
+                listEl.innerHTML = '';
+                users.slice(0, 10).forEach((u, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'lb-item';
+                    const scoreStr = window.activeLbTab === 'height' 
+                        ? Math.floor(u.maxHeight || 0).toLocaleString('id-ID') + " M" 
+                        : (u.totalCoins || 0).toLocaleString('id-ID') + " 🪙";
+
+                    item.innerHTML = `
+                        <span>${idx + 1}. ${u.displayName || u.username}</span>
+                        <span>${scoreStr}</span>
+                    `;
+                    listEl.appendChild(item);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="font-size:7px; text-align:center; color:#e74c3c;">Gagal memuat!</div>';
+            }
+        }
+
+        window.saveUserDataToFirebase = async function(dist, coins) {
+            if (!window.currentUser) return;
+
+            const userRef = ref(db, 'users/' + window.currentUser.username);
+            const newMaxHeight = Math.max(window.currentUser.maxHeight || 0, dist);
+
+            try {
+                await update(userRef, {
+                    maxHeight: newMaxHeight,
+                    totalCoins: coins
+                });
+                window.currentUser.maxHeight = newMaxHeight;
+                window.currentUser.totalCoins = coins;
+                localStorage.setItem('balon_user_session', JSON.stringify(window.currentUser));
+            } catch (e) {
+                console.error("Gagal simpan skor ke DB:", e);
+            }
+        };
+
+        updateAuthUI();
+    </script>
+
+    <!-- WEB AUDIO ENGINE & SCRIPT UTAMA -->
+    <script>
+        let audioCtx = null;
+        let bgmGainNode = null;
+        let sfxGainNode = null;
+        let bgmInterval = null;
+
+        let bgmVolume = parseFloat(localStorage.getItem('balon_bgm_vol')) || 1.0;
+        let sfxVolume = parseFloat(localStorage.getItem('balon_sfx_vol')) || 1.0;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                
+                bgmGainNode = audioCtx.createGain();
+                sfxGainNode = audioCtx.createGain();
+                
+                bgmGainNode.gain.value = bgmVolume;
+                sfxGainNode.gain.value = sfxVolume;
+                
+                bgmGainNode.connect(audioCtx.destination);
+                sfxGainNode.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        window.updateAudioSettings = function() {
+            const bgmVal = document.getElementById('vol-bgm').value;
+            const sfxVal = document.getElementById('vol-sfx').value;
+
+            bgmVolume = bgmVal / 100;
+            sfxVolume = sfxVal / 100;
+
+            document.getElementById('label-bgm').innerText = `VOLUME BACKSOUND (${bgmVal}%):`;
+            document.getElementById('label-sfx').innerText = `VOLUME EFEK RINTANGAN (${sfxVal}%):`;
+
+            localStorage.setItem('balon_bgm_vol', bgmVolume);
+            localStorage.setItem('balon_sfx_vol', sfxVolume);
+
+            if (bgmGainNode) bgmGainNode.gain.value = bgmVolume;
+            if (sfxGainNode) sfxGainNode.gain.value = sfxVolume;
+        };
+
+        function startBGM() {
+            initAudio();
+            stopBGM();
+            
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+            let step = 0;
+
+            bgmInterval = setInterval(() => {
+                if (bgmVolume <= 0 || !audioCtx) return;
+                
+                const osc = audioCtx.createOscillator();
+                const noteGain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(notes[step % notes.length], audioCtx.currentTime);
+                
+                noteGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                
+                osc.connect(noteGain);
+                noteGain.connect(bgmGainNode);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+                
+                step++;
+            }, 320);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        function playExplosionSFX() {
+            initAudio();
+            if (sfxVolume <= 0) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(sfxGainNode);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playTotemBlastSFX() {
+            initAudio();
+            if (sfxVolume <= 0) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.6);
+
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+
+            osc.connect(gain);
+            gain.connect(sfxGainNode);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.6);
+        }
+
+        function playObstacleSFX(type) {
+            initAudio();
+            if (sfxVolume <= 0) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            if (type === 'bird' || type === 'eagle') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+            } else if (type === 'satellite') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+            } else if (type === 'comet' || type === 'meteor') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'asteroid' || type === 'kite') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }
+
+            osc.connect(gain);
+            gain.connect(sfxGainNode);
+        }
+
+        // REDEEM CODE SYSTEM
+        window.redeemedCodes = JSON.parse(localStorage.getItem('balon_redeemed_codes')) || [];
+
+        window.openSettings = function() {
+            document.getElementById('setting-modal').classList.remove('hidden');
+            document.getElementById('vol-bgm').value = bgmVolume * 100;
+            document.getElementById('vol-sfx').value = sfxVolume * 100;
+            document.getElementById('redeem-msg').innerText = '';
+            document.getElementById('redeem-code-input').value = '';
+            window.updateAudioSettings();
+        };
+
+        window.closeSettings = function() {
+            document.getElementById('setting-modal').classList.add('hidden');
+        };
+
+        window.handleRedeemCode = function() {
+            const input = document.getElementById('redeem-code-input').value.trim().toUpperCase();
+            const msg = document.getElementById('redeem-msg');
+
+            if (!input) {
+                msg.style.color = '#e74c3c';
+                msg.innerText = 'Masukkan kode redeem!';
+                return;
+            }
+
+            if (window.redeemedCodes.includes(input)) {
+                msg.style.color = '#e74c3c';
+                msg.innerText = 'Kode sudah pernah dipakai!';
+                return;
+            }
+
+            if (input === 'BALONONTOP') {
+                window.totalCoins += 10000;
+                window.updateCoinsUI();
+                window.redeemedCodes.push(input);
+                localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
+                msg.style.color = '#2ecc71';
+                msg.innerText = 'BERHASIL! +10.000 Koin didapatkan!';
+            } else if (input === 'ADM1NB41K') {
+                inventory.meteor_2 = (inventory.meteor_2 || 0) + 1;
+                window.redeemedCodes.push(input);
+                localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
+                msg.style.color = '#2ecc71';
+                msg.innerText = 'BERHASIL! +1 Item Meteor 2x didapatkan!';
+            } else {
+                msg.style.color = '#e74c3c';
+                msg.innerText = 'Kode tidak valid!';
+            }
+
+            if (window.saveUserDataToFirebase) {
+                window.saveUserDataToFirebase(0, window.totalCoins);
+            }
+        };
+
+        // CANVAS GAME SETUP
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const GAME_WIDTH = 320;
+        const GAME_HEIGHT = 480;
+
+        let scale = 1;
+        function resizeCanvas() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            
+            scale = Math.min(screenWidth / GAME_WIDTH, screenHeight / GAME_HEIGHT);
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+            
+            canvas.style.width = (GAME_WIDTH * scale) + 'px';
+            canvas.style.height = (GAME_HEIGHT * scale) + 'px';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let gameState = 'START';
+        window.totalCoins = parseInt(localStorage.getItem('balon_coins')) || 0;
+        let sessionCoinsGained = 0;
+        let distanceMeters = 0;
+        
+        const SPEED_PER_FRAME = 70 / 300; 
+        let frameCount = 0;
+
+        let shieldHits = 0;
+        let shieldColor = '#3498db';
+        let boostMetersRemaining = 0;
+        let boostSpeedFactor = 1;
+        let activeBoostType = null;
+        
+        let immunityFrames = 0; // Kebal setelah revive
+        let totemBlastFrames = 0; // Efek Kilatan Totem
+
+        let inventory = {
+            shield_blue: 0,
+            shield_yellow: 0,
+            totem: 0, // Item Pasif Totem
+            rocket_1: 0,
+            rocket_3: 0,
+            meteor_1: 0,
+            meteor_2: 0,
+            star: 0,
+            lightspeed: 0
+        };
+
+        const SHOP_ITEMS = [
+            { id: 'shield_blue', name: 'Perisai Biru', price: 5000, desc: 'Tahan 3x Benturan rintangan' },
+            { id: 'shield_yellow', name: 'Perisai Kuning', price: 20000, desc: 'Tahan 10x Benturan rintangan' },
+            { id: 'totem', name: 'Totem Pelindung', price: 15000, desc: '[PASIF] Meledak bercahaya & mementalkan rintangan!' },
+            { id: 'rocket_1', name: 'Roket (1x)', price: 2000, desc: 'Melaju cepat +300 Meter' },
+            { id: 'rocket_3', name: 'Roket (3x)', price: 5500, desc: 'Melaju cepat +900 Meter' },
+            { id: 'meteor_1', name: 'Meteor (1x)', price: 25000, desc: 'Bercahaya & melaju +5.000 Meter' },
+            { id: 'meteor_2', name: 'Meteor (2x)', price: 45000, desc: 'Bercahaya & melaju +10.000 Meter' },
+            { id: 'star', name: 'Mode Bintang', price: 250000, desc: 'Jadi Bintang berekor +100.000 Meter' },
+            { id: 'lightspeed', name: 'Kecepatan Cahaya', price: 800000, desc: 'Melaju instan ke 498.000 Meter!' }
+        ];
+
+        let keys = { left: false, right: false };
+        let isDragging = false;
+        let lastTouchX = 0;
+
+        const balloon = {
+            x: GAME_WIDTH / 2,
+            y: GAME_HEIGHT - 80,
+            width: 20,
+            height: 28,
+            speed: 3.8
+        };
+
+        let obstacles = [];
+        let stars = [];
+
+        for(let i = 0; i < 50; i++) {
+            stars.push({
+                x: Math.random() * GAME_WIDTH,
+                y: Math.random() * GAME_HEIGHT,
+                size: Math.random() > 0.8 ? 2 : 1,
+                alpha: Math.random()
+            });
+        }
+
+        function drawPixelSprite(spriteMap, colorPalette, posX, posY, pixelSize = 2) {
+            ctx.save();
+            for (let r = 0; r < spriteMap.length; r++) {
+                for (let c = 0; c < spriteMap[r].length; c++) {
+                    const colorKey = spriteMap[r][c];
+                    if (colorKey !== '.') {
+                        ctx.fillStyle = colorPalette[colorKey] || colorKey;
+                        ctx.fillRect(
+                            Math.floor(posX + c * pixelSize), 
+                            Math.floor(posY + r * pixelSize), 
+                            pixelSize, 
+                            pixelSize
+                        );
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        const PALETTES = {
+            balloon: { 'R': '#e74c3c', 'D': '#c0392b', 'W': '#ffffff', 'B': '#7f8c8d', 'K': '#8e44ad', 'S': '#bdc3c7' },
+            star_form: { 'Y': '#f1c40f', 'W': '#ffffff', 'O': '#f39c12' },
+            kite: { 'R': '#e74c3c', 'Y': '#f1c40f', 'B': '#2980b9', 'W': '#ffffff' },
+            bird: { 'B': '#2c3e50', 'W': '#ecf0f1', 'Y': '#f39c12' },
+            hotair: { 'R': '#e74c3c', 'Y': '#f1c40f', 'G': '#2ecc71', 'B': '#7f8c8d' },
+            eagle: { 'B': '#7e5109', 'W': '#ffffff', 'Y': '#f39c12' },
+            plane: { 'W': '#ecf0f1', 'R': '#c0392b', 'B': '#2980b9' },
+            satellite: { 'S': '#bdc3c7', 'B': '#2980b9', 'G': '#7f8c8d', 'Y': '#f1c40f' },
+            comet: { 'O': '#e67e22', 'Y': '#f1c40f', 'W': '#ffffff', 'R': '#e74c3c' },
+            meteor: { 'D': '#5d4037', 'L': '#8d6e63', 'R': '#e74c3c', 'Y': '#f1c40f' },
+            asteroid: { 'D': '#3e2723', 'L': '#6d4c41', 'G': '#424242' }
+        };
+
+        const SPRITES = {
+            balloon: [
+                "..RRRRRR..", ".RRRRRWRR.", "RRRRRRWWRR", "RRRRRRRRRR",
+                "RRRRRRRRRR", ".RRRRRRRR.", "..RRRRRR..", "...RRRR...",
+                "....KK....", "....SS....", "...SBBBS..", "...SBBBS.."
+            ],
+            star_form: [
+                "....WW....", "...YYYY...", "..YYYYYY..", ".WWYYYYWW.",
+                "..YYYYYY..", "...YYYY...", "....WW...."
+            ],
+            kite: [ "...R...", "..RRR..", ".RRYRR.", "RRYYYYR", ".RRYRR.", "..RRR..", "...R..." ],
+            bird: [ "B.......B", "BB.....BB", ".BB...BB.", "..BBBBB.." ],
+            hotair: [ "..RRRR..", ".RRYYRR.", "RRYGGYYR", "RRYGGYYR", ".RRYYRR.." ],
+            eagle: [ "B.......B", "BB.....BB", "BBB...BBB", ".BBBWB.." ],
+            plane: [ "....R....", "....W....", "...WWW...", ".WWWWWWW.", "WWWWWWWWW" ],
+            satellite: [ "BBB..S..BBB", "BBB.SSS.BBB", "BBB..S..BBB" ],
+            comet: [ "....W", "...YY", "..OO.", ".RR.." ],
+            meteor: [ "..LLL..", ".LLLLDL", "LLDLLDL", "LLLLLLL" ],
+            asteroid: [ ".GGG.", "GGGGG", "GGGGG" ]
+        };
+
+        function getStageData(meters) {
+            if (meters < 50000) return { id: 1, name: "LANGIT BIRU", bgTop: '#a1c4fd', bgBottom: '#c2e9fb', obs: ['kite', 'bird', 'hotair'], rate: 60 };
+            if (meters < 100000) return { id: 2, name: "MATAHARI TERBENAM", bgTop: '#ff7e5f', bgBottom: '#feb47b', obs: ['eagle', 'plane'], rate: 50 };
+            if (meters < 150000) return { id: 3, name: "MENUJU ANG KASA", bgTop: '#0f2027', bgBottom: '#203a43', obs: ['satellite'], rate: 45 };
+            if (meters < 200000) return { id: 4, name: "GELAP BERBINTANG", bgTop: '#000000', bgBottom: '#0f0c29', obs: ['comet', 'meteor'], rate: 40 };
+            if (meters < 250000) return { id: 5, name: "ORBIT MARS", bgTop: '#1a0000', bgBottom: '#000000', planet: 'mars', obs: ['comet', 'meteor'], rate: 40 };
+            if (meters < 300000) return { id: 6, name: "SABUK ASTEROID", bgTop: '#0a0a0a', bgBottom: '#141414', event: true, obs: ['asteroid'], rate: 15 };
+            if (meters < 350000) return { id: 7, name: "ORBIT JUPITER", bgTop: '#180e05', bgBottom: '#000000', planet: 'jupiter', obs: ['comet', 'meteor'], rate: 35 };
+            if (meters < 400000) return { id: 8, name: "ORBIT SATURNUS", bgTop: '#141308', bgBottom: '#000000', planet: 'saturn', obs: ['comet', 'meteor'], rate: 35 };
+            if (meters < 450000) return { id: 9, name: "ORBIT URANUS", bgTop: '#03141a', bgBottom: '#000000', planet: 'uranus', obs: ['comet', 'meteor'], rate: 30 };
+            if (meters < 499000) return { id: 10, name: "URANUS LUAR", bgTop: '#000014', bgBottom: '#000000', planet: 'uranus', obs: ['comet', 'meteor'], rate: 25 };
+            return { id: 11, name: "SURGA", bgTop: '#ffffff', bgBottom: '#fff6c1', obs: [], rate: 999 };
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+        });
+
+        function handlePointerStart(clientX) {
+            if (gameState !== 'PLAYING') return;
+            isDragging = true;
+            lastTouchX = clientX;
+        }
+
+        function handlePointerMove(clientX) {
+            if (!isDragging || gameState !== 'PLAYING') return;
+            const rect = canvas.getBoundingClientRect();
+            const canvasTouchX = (clientX - rect.left) / scale;
+            const deltaX = canvasTouchX - (lastTouchX - rect.left) / scale;
+            
+            balloon.x += deltaX * 1.3;
+            lastTouchX = clientX;
+        }
+
+        function handlePointerEnd() { isDragging = false; }
+
+        canvas.addEventListener('mousedown', e => handlePointerStart(e.clientX));
+        window.addEventListener('mousemove', e => handlePointerMove(e.clientX));
+        window.addEventListener('mouseup', handlePointerEnd);
+
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length > 0) handlePointerStart(e.touches[0].clientX);
+        });
+        window.addEventListener('touchmove', e => {
+            if (e.touches.length > 0) handlePointerMove(e.touches[0].clientX);
+        }, { passive: true });
+        window.addEventListener('touchend', handlePointerEnd);
+
+        window.updateCoinsUI = function() {
+            document.getElementById('menu-coins-display').innerText = "KOIN: " + window.totalCoins.toLocaleString('id-ID');
+            document.getElementById('shop-coins-display').innerText = "🪙 " + window.totalCoins.toLocaleString('id-ID');
+            localStorage.setItem('balon_coins', window.totalCoins);
+        };
+
+        function openShop() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('shop-screen').classList.remove('hidden');
+            renderShopList();
+        }
+
+        function closeShop() {
+            document.getElementById('shop-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            window.updateCoinsUI();
+        }
+
+        function renderShopList() {
+            const list = document.getElementById('shop-items-list');
+            list.innerHTML = '';
+
+            SHOP_ITEMS.forEach(item => {
+                const count = inventory[item.id] || 0;
+                const canAfford = window.totalCoins >= item.price;
+
+                const card = document.createElement('div');
+                card.className = 'shop-item-card';
+                card.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-name">${item.name} (${count})</span>
+                        <span class="item-desc">${item.desc}</span>
+                    </div>
+                    <button class="item-buy-btn" ${canAfford ? '' : 'disabled'} onclick="buyItem('${item.id}')">
+                        ${item.price.toLocaleString('id-ID')} 🪙
+                    </button>
+                `;
+                list.appendChild(card);
+            });
+            window.updateCoinsUI();
+        }
+
+        window.buyItem = function(id) {
+            const item = SHOP_ITEMS.find(i => i.id === id);
+            if (item && window.totalCoins >= item.price) {
+                window.totalCoins -= item.price;
+                inventory[id] = (inventory[id] || 0) + 1;
+                renderShopList();
+                if (window.saveUserDataToFirebase) {
+                    window.saveUserDataToFirebase(0, window.totalCoins);
+                }
+            }
+        };
+
+        function renderInGameItemBar() {
+            const itemBar = document.getElementById('item-bar');
+            itemBar.innerHTML = '';
+            let hasItem = false;
+
+            // Render hanya item AKTIF (Totem adalah PASIF jadi tidak ditampilkan sebagai tombol)
+            SHOP_ITEMS.forEach(item => {
+                if (item.id === 'totem') return; // Skip Totem dari tombol trigger
+                const count = inventory[item.id] || 0;
+                if (count > 0) {
+                    hasItem = true;
+                    const btn = document.createElement('button');
+                    btn.className = 'item-btn';
+                    btn.innerHTML = `<span>${item.name}</span><span>x${count}</span>`;
+                    btn.onclick = () => triggerItem(item.id);
+                    itemBar.appendChild(btn);
+                }
+            });
+
+            if (hasItem) {
+                itemBar.classList.remove('hidden');
+            } else {
+                itemBar.classList.add('hidden');
+            }
+        }
+
+        function triggerItem(id) {
+            if (!inventory[id] || inventory[id] <= 0 || gameState !== 'PLAYING') return;
+
+            inventory[id]--;
+
+            if (id === 'shield_blue') {
+                shieldHits = 3;
+                shieldColor = '#3498db';
+            } else if (id === 'shield_yellow') {
+                shieldHits = 10;
+                shieldColor = '#f1c40f';
+            } else if (id === 'rocket_1') {
+                boostMetersRemaining += 300;
+                boostSpeedFactor = 15;
+            } else if (id === 'rocket_3') {
+                boostMetersRemaining += 900;
+                boostSpeedFactor = 20;
+            } else if (id === 'meteor_1') {
+                boostMetersRemaining += 5000;
+                boostSpeedFactor = 35;
+                activeBoostType = 'meteor';
+            } else if (id === 'meteor_2') {
+                boostMetersRemaining += 10000;
+                boostSpeedFactor = 40;
+                activeBoostType = 'meteor';
+            } else if (id === 'star') {
+                boostMetersRemaining += 100000;
+                boostSpeedFactor = 60;
+                activeBoostType = 'star';
+            } else if (id === 'lightspeed') {
+                if (distanceMeters < 498000) {
+                    boostMetersRemaining = 498000 - distanceMeters;
+                    boostSpeedFactor = 120;
+                    activeBoostType = 'light';
+                }
+            }
+
+            renderInGameItemBar();
+        }
+
+        // TRIGGER EFEK PASIF TOTEM
+        function triggerTotemRepel() {
+            inventory.totem--; // Konsumsi 1 Totem
+            totemBlastFrames = 20; // Cahaya putih 20 frame
+            immunityFrames = 120; // Kebal 2 detik
+            playTotemBlastSFX();
+
+            // PENTALLAN SEMUA RINTANGAN DI LAYAR KE KIRI DAN KANAN
+            obstacles.forEach(obs => {
+                const dir = (obs.x + obs.w / 2 < GAME_WIDTH / 2) ? -1 : 1;
+                obs.vx = dir * (12 + Math.random() * 8); // Pental jauh ke luar HP
+                obs.vy = -3 - Math.random() * 3;
+            });
+        }
+
+        function spawnObstacle(stage) {
+            if (!stage.obs || stage.obs.length === 0 || boostMetersRemaining > 0) return;
+
+            const type = stage.obs[Math.floor(Math.random() * stage.obs.length)];
+            const spriteData = SPRITES[type];
+            const pSize = (type === 'asteroid' && stage.event) ? Math.floor(Math.random() * 3) + 2 : 2;
+            
+            const width = spriteData[0].length * pSize;
+            const height = spriteData.length * pSize;
+
+            let x = Math.random() * (GAME_WIDTH - width);
+            let speedY = 1.5 + Math.random() * 1.5;
+            let speedX = (Math.random() - 0.5) * 1;
+
+            if (stage.event) {
+                speedY = 2 + Math.random() * 3;
+                speedX = (Math.random() - 0.5) * 3;
+            }
+
+            playObstacleSFX(type);
+
+            obstacles.push({
+                type: type,
+                x: x,
+                y: -height,
+                w: width,
+                h: height,
+                pixelSize: pSize,
+                vx: speedX,
+                vy: speedY
+            });
+        }
+
+        function drawPixelPlanet(type) {
+            ctx.save();
+            const cx = GAME_WIDTH / 2;
+            const cy = GAME_HEIGHT / 2 - 40;
+
+            if (type === 'mars') {
+                ctx.fillStyle = '#c0392b';
+                ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI * 2); ctx.fill();
+            } else if (type === 'jupiter') {
+                ctx.fillStyle = '#d35400';
+                ctx.beginPath(); ctx.arc(cx, cy, 60, 0, Math.PI * 2); ctx.fill();
+            } else if (type === 'saturn') {
+                ctx.fillStyle = '#f1c40f';
+                ctx.beginPath(); ctx.arc(cx, cy, 35, 0, Math.PI * 2); ctx.fill();
+            } else if (type === 'uranus') {
+                ctx.fillStyle = '#1abc9c';
+                ctx.beginPath(); ctx.arc(cx, cy, 45, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            const stage = getStageData(distanceMeters);
+
+            if (immunityFrames > 0) immunityFrames--;
+            if (totemBlastFrames > 0) totemBlastFrames--;
+
+            let currentSpeed = SPEED_PER_FRAME;
+            if (boostMetersRemaining > 0) {
+                currentSpeed *= boostSpeedFactor;
+                boostMetersRemaining -= currentSpeed;
+                if (boostMetersRemaining <= 0) {
+                    boostMetersRemaining = 0;
+                    activeBoostType = null;
+                }
+            }
+
+            distanceMeters += currentSpeed;
+            sessionCoinsGained = Math.floor(distanceMeters);
+
+            document.getElementById('dist-ui').innerText = Math.floor(distanceMeters).toLocaleString('id-ID') + " M";
+            document.getElementById('coin-ui').innerText = "🪙 " + (window.totalCoins + sessionCoinsGained).toLocaleString('id-ID');
+            document.getElementById('stage-ui').innerText = "STAGE " + stage.id;
+
+            if (distanceMeters >= 499000) {
+                gameState = 'WIN';
+                stopBGM();
+                window.totalCoins += sessionCoinsGained;
+                window.updateCoinsUI();
+                if (window.saveUserDataToFirebase) {
+                    window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
+                }
+                document.getElementById('heaven-screen').classList.remove('hidden');
+                document.getElementById('hud').style.display = 'none';
+                document.getElementById('item-bar').classList.add('hidden');
+                return;
+            }
+
+            if (keys.left) balloon.x -= balloon.speed;
+            if (keys.right) balloon.x += balloon.speed;
+
+            if (balloon.x < 0) balloon.x = 0;
+            if (balloon.x > GAME_WIDTH - balloon.width) balloon.x = GAME_WIDTH - balloon.width;
+
+            frameCount++;
+            if (frameCount % stage.rate === 0) {
+                spawnObstacle(stage);
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.x += obs.vx;
+                obs.y += obs.vy + (boostMetersRemaining > 0 ? 8 : 0);
+
+                if (obs.x < -100 || obs.x > GAME_WIDTH + 100 || obs.y > GAME_HEIGHT + 50) {
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+
+                const margin = 3;
+                if (
+                    balloon.x + margin < obs.x + obs.w - margin &&
+                    balloon.x + balloon.width - margin > obs.x + margin &&
+                    balloon.y + margin < obs.y + obs.h - margin &&
+                    balloon.y + balloon.height - margin > obs.y + margin
+                ) {
+                    if (boostMetersRemaining > 0) {
+                        obstacles.splice(i, 1);
+                    } else if (shieldHits > 0) {
+                        shieldHits--;
+                        obstacles.splice(i, 1);
+                    } else if (inventory.totem > 0) {
+                        // TOTEM TERPICU!
+                        triggerTotemRepel();
+                    } else if (immunityFrames <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+        }
+
+        function render() {
+            const stage = getStageData(distanceMeters);
+
+            let grd = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+            grd.addColorStop(0, stage.bgTop);
+            grd.addColorStop(1, stage.bgBottom);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            if (stage.id >= 3 && stage.id < 11) {
+                ctx.fillStyle = '#ffffff';
+                stars.forEach(s => {
+                    s.y += (boostMetersRemaining > 0) ? 6 : 0.5;
+                    if (s.y > GAME_HEIGHT) s.y = 0;
+                    ctx.globalAlpha = s.alpha;
+                    ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
+                });
+                ctx.globalAlpha = 1.0;
+            }
+
+            if (stage.planet) {
+                drawPixelPlanet(stage.planet);
+            }
+
+            obstacles.forEach(obs => {
+                drawPixelSprite(SPRITES[obs.type], PALETTES[obs.type], obs.x, obs.y, obs.pixelSize);
+            });
+
+            if (gameState === 'PLAYING') {
+                ctx.save();
+                
+                // Efek Kedip saat Immunity
+                if (immunityFrames > 0 && Math.floor(immunityFrames / 6) % 2 === 0) {
+                    ctx.globalAlpha = 0.4;
+                }
+
+                if (boostMetersRemaining > 0) {
+                    ctx.fillStyle = activeBoostType === 'star' ? '#f1c40f' : (activeBoostType === 'meteor' ? '#ffffff' : '#3498db');
+                    for (let i = 0; i < 5; i++) {
+                        ctx.globalAlpha = 0.8 - i * 0.15;
+                        ctx.fillRect(
+                            balloon.x + Math.random() * 8 - 4, 
+                            balloon.y + balloon.height + i * 8, 
+                            balloon.width, 
+                            8
+                        );
+                    }
+                    ctx.globalAlpha = 1.0;
+                }
+
+                if (activeBoostType === 'star') {
+                    drawPixelSprite(SPRITES.star_form, PALETTES.star_form, balloon.x, balloon.y, 2.5);
+                } else {
+                    drawPixelSprite(SPRITES.balloon, PALETTES.balloon, balloon.x, balloon.y, 2);
+                    if (activeBoostType === 'meteor') {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.beginPath();
+                        ctx.arc(balloon.x + balloon.width/2, balloon.y + balloon.height/2, 20, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+
+                if (shieldHits > 0) {
+                    ctx.strokeStyle = shieldColor;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(balloon.x + balloon.width / 2, balloon.y + balloon.height / 2, 22, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = shieldColor;
+                    ctx.font = '8px "Press Start 2P"';
+                    ctx.fillText(shieldHits, balloon.x + balloon.width / 2 - 3, balloon.y - 8);
+                }
+
+                ctx.restore();
+            }
+
+            // KILATAN CAHAYA PUTIH TOTEM
+            if (totemBlastFrames > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${totemBlastFrames / 20})`;
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            }
+
+            if (distanceMeters > 490000 && distanceMeters < 499000) {
+                const alpha = (distanceMeters - 490000) / 9000;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            if (gameState === 'PLAYING') {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        window.startGame = function() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('heaven-screen').classList.add('hidden');
+            document.getElementById('hud').style.display = 'flex';
+
+            gameState = 'PLAYING';
+            distanceMeters = 0;
+            sessionCoinsGained = 0;
+            boostMetersRemaining = 0;
+            activeBoostType = null;
+            shieldHits = 0;
+            immunityFrames = 0;
+            totemBlastFrames = 0;
+            obstacles = [];
+            balloon.x = GAME_WIDTH / 2 - balloon.width / 2;
+            frameCount = 0;
+
+            startBGM();
+            renderInGameItemBar();
+            gameLoop();
+        };
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+
+            stopBGM();
+            playExplosionSFX();
+
+            const currentTotalCoins = window.totalCoins + sessionCoinsGained;
+
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(balloon.x - 10, balloon.y - 10, 40, 40);
+
+            document.getElementById('final-dist').innerText = "Ketinggian: " + Math.floor(distanceMeters).toLocaleString('id-ID') + " Meter";
+            document.getElementById('final-coins').innerText = "+ " + sessionCoinsGained.toLocaleString('id-ID') + " Koin Didapat!";
+            
+            // Cek ketersediaan koin untuk Revive
+            const reviveBtn = document.getElementById('revive-btn');
+            if (currentTotalCoins >= 2000) {
+                reviveBtn.disabled = false;
+                reviveBtn.innerText = "HIDUP LAGI (2.000 🪙)";
+            } else {
+                reviveBtn.disabled = true;
+                reviveBtn.innerText = "REVIVE (Koin Kurang)";
+            }
+
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('item-bar').classList.add('hidden');
+        }
+
+        window.attemptRevive = function() {
+            const totalAvailableCoins = window.totalCoins + sessionCoinsGained;
+            if (totalAvailableCoins >= 2000) {
+                // Potong 2.000 Koin
+                if (sessionCoinsGained >= 2000) {
+                    sessionCoinsGained -= 2000;
+                } else {
+                    const remainingCost = 2000 - sessionCoinsGained;
+                    sessionCoinsGained = 0;
+                    window.totalCoins -= remainingCost;
+                }
+
+                window.updateCoinsUI();
+
+                // Kembalikan ke Permainan
+                document.getElementById('game-over-screen').classList.add('hidden');
+                document.getElementById('hud').style.display = 'flex';
+                
+                gameState = 'PLAYING';
+                immunityFrames = 150; // Kebal 2.5 detik saat respawn
+                obstacles = []; // Bersihkan rintangan terdekat
+                
+                startBGM();
+                renderInGameItemBar();
+                gameLoop();
+            }
+        };
+
+        window.resetGame = function() {
+            window.totalCoins += sessionCoinsGained;
+            window.updateCoinsUI();
+            if (window.saveUserDataToFirebase) {
+                window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
+            }
+            window.startGame();
+        };
+
+        window.showMainMenu = function() {
+            gameState = 'START';
+            stopBGM();
+            window.totalCoins += sessionCoinsGained;
+            window.updateCoinsUI();
+            if (window.saveUserDataToFirebase) {
+                window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
+            }
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('heaven-screen').classList.add('hidden');
+            document.getElementById('shop-screen').classList.add('hidden');
+            document.getElementById('setting-modal').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('item-bar').classList.add('hidden');
+            render();
+        };
+
+        window.updateCoinsUI();
+        render();
+    </script>
+</body>
+</html>
