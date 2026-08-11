@@ -97,24 +97,181 @@
             justify-content: space-between;
             padding: 10px;
         }
-        /* ... existing styles ... */
-        .hud-item {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 6px 8px;
-            border: 2px solid #fff;
-            border-radius: 4px;
+        /* HUD GAME — diperbaiki supaya buff Koin 2x tidak membuat layout berantakan */
+        .hud {
+            position: absolute;
+            top: 58px;
+            left: 10px;
+            right: 10px;
+            z-index: 12;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            align-items: start;
+            gap: 8px;
+            pointer-events: none;
         }
 
+        .hud-item {
+            width: max-content;
+            max-width: 100%;
+            min-height: 30px;
+            background: rgba(0, 0, 0, 0.78);
+            color: #fff;
+            padding: 7px 9px;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            font-size: 8px;
+            line-height: 1.35;
+            text-shadow: 1px 1px #000;
+            white-space: nowrap;
+        }
+
+        #dist-ui { justify-self: start; }
+        #coin-ui { justify-self: center; }
+        #stage-ui { justify-self: end; }
+
         .buff-badge {
+            position: absolute;
+            top: 38px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 14;
             color: #f1c40f;
             border-color: #f1c40f;
+            background: rgba(0, 0, 0, 0.9);
+            min-width: 132px;
+            text-align: center;
             animation: pulseBuff 1s infinite alternate;
+            box-shadow: 0 0 5px rgba(241,196,15,.65);
+        }
+
+        @keyframes pulseBuff {
+            from { box-shadow: 0 0 3px rgba(241,196,15,.55); }
+            to { box-shadow: 0 0 12px rgba(241,196,15,.95); }
+        }
+
+        @media (max-width: 600px) {
+            .top-bar {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                gap: 4px;
+            }
+            .user-badge {
+                padding: 5px 6px;
+                font-size: 7px;
+                flex: 0 1 auto;
+                max-width: 105px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .top-btn-group { gap: 3px; }
+            .top-btn {
+                padding: 5px 6px;
+                font-size: 7px;
+                white-space: nowrap;
+            }
+            .hud {
+                top: 52px;
+                left: 6px;
+                right: 6px;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 4px;
+            }
+            .hud-item {
+                min-height: 26px;
+                padding: 5px 6px;
+                font-size: 6px;
+            }
+            .buff-badge {
+                top: 31px;
+                min-width: 118px;
+                padding: 5px 7px;
+                font-size: 6px;
+            }
         }
 
         @keyframes pulseBuff {
             from { box-shadow: 0 0 2px #f1c40f; }
             to { box-shadow: 0 0 8px #f1c40f; }
         }
+
+        /* DESKTOP / PC UI */
+        @media (min-width: 601px) {
+            body, html {
+                overflow: hidden;
+            }
+
+            #game-container {
+                min-width: 100vw;
+                min-height: 100vh;
+            }
+
+            canvas {
+                border: 2px solid rgba(255,255,255,.22);
+                box-shadow: 0 0 35px rgba(0,0,0,.9);
+            }
+
+            .top-bar {
+                width: min(var(--game-width, 720px), calc(100vw - 40px));
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                top: 14px;
+                gap: 12px;
+            }
+
+            .user-badge {
+                min-width: 150px;
+                padding: 9px 12px;
+                font-size: 9px;
+            }
+
+            .top-btn-group {
+                gap: 8px;
+            }
+
+            .top-btn {
+                padding: 9px 12px;
+                font-size: 8px;
+                min-height: 34px;
+            }
+
+            .hud {
+                width: min(var(--game-width, 720px), calc(100vw - 40px));
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                top: 68px;
+                gap: 10px;
+            }
+
+            .hud-item {
+                min-height: 34px;
+                padding: 8px 11px;
+                font-size: 8px;
+                border-width: 2px;
+            }
+
+            .buff-badge {
+                top: 43px;
+                min-width: 155px;
+                padding: 8px 10px;
+                font-size: 8px;
+            }
+
+            .item-bar {
+                bottom: max(18px, calc((100vh - min(100vh - 30px, 720px)) / 2));
+                gap: 8px;
+                max-width: 680px;
+            }
+
+            .item-btn {
+                padding: 8px 10px;
+                font-size: 7px;
+            }
+        }
+
 
         .item-bar {
             position: absolute;
@@ -1015,6 +1172,12 @@
                 localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
                 msg.style.color = '#2ecc71';
                 msg.innerText = 'BERHASIL! +1 Item Meteor 2x didapatkan!';
+            } else if (input === 'STAGE2') {
+                inventory.meteor_2 = (inventory.meteor_2 || 0) + 5;
+                window.redeemedCodes.push(input);
+                localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
+                msg.style.color = '#2ecc71';
+                msg.innerText = 'BERHASIL! +5 Item Meteor 2x didapatkan!';
             } else if (input === 'LYYENAK') {
                 activateCoinMultiplier(2, 600); // 10 menit = 600 detik
                 window.redeemedCodes.push(input);
@@ -1049,6 +1212,7 @@
             
             canvas.style.width = (GAME_WIDTH * scale) + 'px';
             canvas.style.height = (GAME_HEIGHT * scale) + 'px';
+            document.documentElement.style.setProperty('--game-width', (GAME_WIDTH * scale) + 'px');
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
