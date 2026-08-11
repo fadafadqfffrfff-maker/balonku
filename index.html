@@ -217,6 +217,45 @@
         .btn-menu { background: #3498db; }
         .btn-revive { background: #2ecc71; color: #fff; }
 
+        .checkpoint-list {
+            width: 100%;
+            max-width: 280px;
+            max-height: 330px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-bottom: 12px;
+        }
+        .checkpoint-btn {
+            width: 100%;
+            padding: 10px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            background: #3498db;
+            color: #fff;
+            border: 2px solid #fff;
+            box-shadow: 3px 3px #000;
+            cursor: pointer;
+            text-align: left;
+        }
+        .checkpoint-btn.unlocked { background: #2ecc71; }
+        .checkpoint-btn.current { background: #f1c40f; color: #000; }
+        .checkpoint-btn:disabled {
+            background: #34495e;
+            color: #7f8c8d;
+            border-color: #566573;
+            cursor: not-allowed;
+            box-shadow: 2px 2px #000;
+        }
+        .checkpoint-info {
+            font-size: 7px;
+            color: #bdc3c7;
+            line-height: 1.7;
+            max-width: 280px;
+            margin-bottom: 10px;
+        }
+
         .hidden { display: none !important; }
 
         /* MODAL STYLES */
@@ -432,6 +471,7 @@
             
             <div class="btn-group">
                 <button class="btn" onclick="startGame()">PLAY ▶</button>
+                <button class="btn btn-menu" onclick="openCheckpoints()">STAGE / CHECKPOINT 🏁</button>
                 <button class="btn btn-shop" onclick="openShop()">TOKO / SHOP 🛒</button>
                 <button class="btn btn-setting" onclick="openSettings()">SETTINGS ⚙️</button>
             </div>
@@ -508,6 +548,16 @@
             </div>
 
             <button class="btn btn-retry" style="margin-top: 15px;" onclick="closeLeaderboard()">TUTUP</button>
+        </div>
+
+        <!-- CHECKPOINT MODAL -->
+        <div id="checkpoint-modal" class="modal hidden">
+            <div class="modal-title">STAGE / CHECKPOINT</div>
+            <div class="checkpoint-info" id="checkpoint-info">
+                Lewati sebuah stage untuk membuka checkpoint. Stage yang sudah terbuka bisa dipilih dari sini.
+            </div>
+            <div class="checkpoint-list" id="checkpoint-list"></div>
+            <button class="btn btn-retry" onclick="closeCheckpoints()">KEMBALI</button>
         </div>
 
         <!-- SHOP MODAL -->
@@ -634,7 +684,8 @@
                         displayName: displayName,
                         password: password,
                         maxHeight: 0,
-                        totalCoins: window.totalCoins || 0
+                        totalCoins: window.totalCoins || 0,
+                        checkpointStage: 1
                     };
 
                     await set(userRef, userData);
@@ -653,6 +704,10 @@
                     if (userData.totalCoins > window.totalCoins) {
                         window.totalCoins = userData.totalCoins;
                         window.updateCoinsUI();
+                    }
+                    if (userData.checkpointStage) {
+                        checkpointStage = Math.max(1, Math.min(10, parseInt(userData.checkpointStage) || 1));
+                        localStorage.setItem('balon_checkpoint_stage', checkpointStage);
                     }
                 }
 
@@ -737,7 +792,8 @@
             try {
                 await update(userRef, {
                     maxHeight: newMaxHeight,
-                    totalCoins: coins
+                    totalCoins: coins,
+                    checkpointStage: checkpointStage
                 });
                 window.currentUser.maxHeight = newMaxHeight;
                 window.currentUser.totalCoins = coins;
@@ -1001,6 +1057,47 @@
         window.totalCoins = parseInt(localStorage.getItem('balon_coins')) || 0;
         let sessionCoinsGained = 0;
         let distanceMeters = 0;
+
+        // CHECKPOINT STAGE: Stage 1 selalu terbuka. Stage berikutnya terbuka
+        // setelah pemain benar-benar melewati batas stage tersebut.
+        const STAGE_CHECKPOINTS = {
+            1: 0,
+            2: 50000,
+            3: 100000,
+            4: 150000,
+            5: 200000,
+            6: 250000,
+            7: 300000,
+            8: 350000,
+            9: 400000,
+            10: 450000
+        };
+        let checkpointStage = Math.max(1, Math.min(10, parseInt(localStorage.getItem('balon_checkpoint_stage')) || 1));
+        let selectedStartStage = 1;
+
+        function saveCheckpointStage(stage) {
+            if (stage <= checkpointStage) return;
+            checkpointStage = Math.min(10, stage);
+            localStorage.setItem('balon_checkpoint_stage', checkpointStage);
+            if (window.currentUser) {
+                window.currentUser.checkpointStage = checkpointStage;
+                localStorage.setItem('balon_user_session', JSON.stringify(window.currentUser));
+                if (window.saveUserDataToFirebase) {
+                    window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
+                }
+            }
+            renderCheckpointList();
+        }
+
+        function checkStageCheckpoint() {
+            for (let stage = 10; stage >= 2; stage--) {
+                if (distanceMeters >= STAGE_CHECKPOINTS[stage]) {
+                    saveCheckpointStage(stage);
+                    break;
+                }
+            }
+        }
+
         
         const SPEED_PER_FRAME = 70 / 300; 
         let frameCount = 0;
@@ -1017,6 +1114,23 @@
         // SYSTEM BOOSTER KOIN MULTIPLIER
         let activeCoinMultiplier = 1;
         let coinMultiplierTimeRemaining = 0; // dalam detik
+
+        // SUPER SPEED: efek aktif selama 7 menit
+        let activeSpeedBoost = 1;
+        let speedBoostTimeRemaining = 0;
+        const SPEED_BOOST_DURATION = 420;
+        const SPEED_BOOSTS = {
+            speed_100: { factor: 100 / 70, name: '100 M/S' },
+            speed_1k: { factor: 1000 / 70, name: '1 KM/S' },
+            speed_10k: { factor: 10000 / 70, name: '10 KM/S' },
+            speed_70k: { factor: 70000 / 70, name: '70 KM/S' }
+        };
+        function activateSpeedBoost(id) {
+            const boost = SPEED_BOOSTS[id];
+            if (!boost) return;
+            activeSpeedBoost = boost.factor;
+            speedBoostTimeRemaining = SPEED_BOOST_DURATION;
+        }
 
         function activateCoinMultiplier(multiplier, durationSeconds) {
             activeCoinMultiplier = Math.max(activeCoinMultiplier, multiplier);
@@ -1035,7 +1149,11 @@
             lightspeed: 0,
             coin_2x: 0,
             coin_5x: 0,
-            coin_10x: 0
+            coin_10x: 0,
+            speed_100: 0,
+            speed_1k: 0,
+            speed_10k: 0,
+            speed_70k: 0
         };
 
         const SHOP_ITEMS = [
@@ -1050,7 +1168,11 @@
             { id: 'lightspeed', name: 'Kecepatan Cahaya', price: 800000, desc: 'Melaju instan ke 498.000 Meter!' },
             { id: 'coin_2x', name: 'Koin 2x (30 Mnt)', price: 20000, desc: 'Pendapatan koin 2x lipat selama 30 menit' },
             { id: 'coin_5x', name: 'Koin 5x (30 Mnt)', price: 60000, desc: 'Pendapatan koin 5x lipat selama 30 menit' },
-            { id: 'coin_10x', name: 'Koin 10x (30 Mnt)', price: 180000, desc: 'Pendapatan koin 10x lipat selama 30 menit' }
+            { id: 'coin_10x', name: 'Koin 10x (30 Mnt)', price: 180000, desc: 'Pendapatan koin 10x lipat selama 30 menit' },
+            { id: 'speed_100', name: 'Kecepatan 100 M/S', price: 50000, desc: '100 meter/detik selama 7 menit. Rintangan lebih lambat & jarang.' },
+            { id: 'speed_1k', name: 'Kecepatan 1 KM/S', price: 150000, desc: '1 KM/detik selama 7 menit. Rintangan lebih lambat & jarang.' },
+            { id: 'speed_10k', name: 'Kecepatan 10 KM/S', price: 500000, desc: '10 KM/detik selama 7 menit. Rintangan sangat lambat & sedikit.' },
+            { id: 'speed_70k', name: 'Kecepatan 70 KM/S', price: 2000000, desc: '70 KM/detik selama 7 menit. Rintangan sangat lambat & sangat sedikit.' }
         ];
 
         let keys = { left: false, right: false };
@@ -1191,6 +1313,40 @@
             localStorage.setItem('balon_coins', window.totalCoins);
         };
 
+        function renderCheckpointList() {
+            const list = document.getElementById('checkpoint-list');
+            const info = document.getElementById('checkpoint-info');
+            if (!list) return;
+            list.innerHTML = '';
+            info.innerText = `Checkpoint terbuka: STAGE ${checkpointStage}/10. Pilih stage untuk mulai dari jarak tersebut.`;
+
+            for (let stage = 1; stage <= 10; stage++) {
+                const unlocked = stage <= checkpointStage;
+                const btn = document.createElement('button');
+                btn.className = 'checkpoint-btn' + (unlocked ? ' unlocked' : '');
+                if (stage === checkpointStage) btn.classList.add('current');
+                btn.disabled = !unlocked;
+                const meters = STAGE_CHECKPOINTS[stage];
+                const km = meters >= 1000 ? `${meters / 1000} KM` : `${meters} M`;
+                btn.innerText = unlocked
+                    ? `🏁 STAGE ${stage}  •  ${km}${stage === checkpointStage ? '  ✓ TERAKHIR' : ''}`
+                    : `🔒 STAGE ${stage}  •  TERKUNCI`;
+                if (unlocked) btn.onclick = () => startGameAtCheckpoint(stage);
+                list.appendChild(btn);
+            }
+        }
+
+        function openCheckpoints() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('checkpoint-modal').classList.remove('hidden');
+            renderCheckpointList();
+        }
+
+        function closeCheckpoints() {
+            document.getElementById('checkpoint-modal').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
         function openShop() {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('shop-screen').classList.remove('hidden');
@@ -1199,6 +1355,7 @@
 
         function closeShop() {
             document.getElementById('shop-screen').classList.add('hidden');
+            document.getElementById('checkpoint-modal').classList.add('hidden');
             document.getElementById('start-screen').classList.remove('hidden');
             window.updateCoinsUI();
         }
@@ -1300,6 +1457,9 @@
                     boostSpeedFactor = 120;
                     activeBoostType = 'light';
                 }
+            } else if (id === 'speed_100' || id === 'speed_1k' || id === 'speed_10k' || id === 'speed_70k') {
+                activateSpeedBoost(id);
+                activeBoostType = 'speed';
             } else if (id === 'coin_2x') {
                 activateCoinMultiplier(2, 1800); // 30 menit
             } else if (id === 'coin_5x') {
@@ -1339,6 +1499,7 @@
             let x = Math.random() * (GAME_WIDTH - width);
             let speedY = 1.5 + Math.random() * 1.5;
             let speedX = (Math.random() - 0.5) * 1;
+            if (speedBoostTimeRemaining > 0) { speedY *= 0.22; speedX *= 0.35; }
 
             if (stage.event) {
                 speedY = 2 + Math.random() * 3;
@@ -1388,6 +1549,11 @@
             if (immunityFrames > 0) immunityFrames--;
             if (totemBlastFrames > 0) totemBlastFrames--;
 
+            if (speedBoostTimeRemaining > 0) {
+                speedBoostTimeRemaining -= 1 / 60;
+                if (speedBoostTimeRemaining <= 0) { speedBoostTimeRemaining = 0; activeSpeedBoost = 1; activeBoostType = null; }
+            }
+
             if (coinMultiplierTimeRemaining > 0) {
                 coinMultiplierTimeRemaining -= (1 / 60); // Kurangi per frame (~60 FPS)
                 if (coinMultiplierTimeRemaining <= 0) {
@@ -1397,6 +1563,7 @@
             }
 
             let currentSpeed = SPEED_PER_FRAME;
+            if (speedBoostTimeRemaining > 0) currentSpeed *= activeSpeedBoost;
             if (boostMetersRemaining > 0) {
                 currentSpeed *= boostSpeedFactor;
                 boostMetersRemaining -= currentSpeed;
@@ -1408,13 +1575,20 @@
 
             distanceMeters += currentSpeed;
             sessionCoinsGained += currentSpeed * activeCoinMultiplier;
+            checkStageCheckpoint();
 
             document.getElementById('dist-ui').innerText = Math.floor(distanceMeters).toLocaleString('id-ID') + " M";
             document.getElementById('coin-ui').innerText = "🪙 " + (window.totalCoins + Math.floor(sessionCoinsGained)).toLocaleString('id-ID');
             document.getElementById('stage-ui').innerText = "STAGE " + stage.id;
 
             const buffUi = document.getElementById('buff-ui');
-            if (activeCoinMultiplier > 1 && coinMultiplierTimeRemaining > 0) {
+            if (speedBoostTimeRemaining > 0) {
+                const mins = Math.floor(speedBoostTimeRemaining / 60);
+                const secs = Math.floor(speedBoostTimeRemaining % 60);
+                const speedName = activeSpeedBoost >= 70000/70 ? '70 KM/S' : activeSpeedBoost >= 10000/70 ? '10 KM/S' : activeSpeedBoost >= 1000/70 ? '1 KM/S' : '100 M/S';
+                buffUi.innerText = `⚡ ${speedName} ${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                buffUi.classList.remove('hidden');
+            } else if (activeCoinMultiplier > 1 && coinMultiplierTimeRemaining > 0) {
                 const mins = Math.floor(coinMultiplierTimeRemaining / 60);
                 const secs = Math.floor(coinMultiplierTimeRemaining % 60);
                 const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -1445,9 +1619,8 @@
             if (balloon.x > GAME_WIDTH - balloon.width) balloon.x = GAME_WIDTH - balloon.width;
 
             frameCount++;
-            if (frameCount % stage.rate === 0) {
-                spawnObstacle(stage);
-            }
+            const obstacleRate = speedBoostTimeRemaining > 0 ? Math.max(180, stage.rate * 4) : stage.rate;
+            if (frameCount % obstacleRate === 0) spawnObstacle(stage);
 
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 let obs = obstacles[i];
@@ -1579,17 +1752,24 @@
             }
         }
 
-        window.startGame = function() {
+        window.startGame = function(startStage = 1) {
+            startStage = Math.max(1, Math.min(10, parseInt(startStage) || 1));
+            if (startStage > checkpointStage) startStage = checkpointStage;
+            selectedStartStage = startStage;
+
             document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('checkpoint-modal').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('heaven-screen').classList.add('hidden');
             document.getElementById('hud').style.display = 'flex';
 
             gameState = 'PLAYING';
-            distanceMeters = 0;
+            distanceMeters = STAGE_CHECKPOINTS[startStage];
             sessionCoinsGained = 0;
             boostMetersRemaining = 0;
             activeBoostType = null;
+            activeSpeedBoost = 1;
+            speedBoostTimeRemaining = 0;
             shieldHits = 0;
             immunityFrames = 0;
             totemBlastFrames = 0;
@@ -1601,6 +1781,10 @@
             renderInGameItemBar();
             gameLoop();
         };
+
+        function startGameAtCheckpoint(stage) {
+            startGame(stage);
+        }
 
         function gameOver() {
             gameState = 'GAMEOVER';
@@ -1666,7 +1850,7 @@
             if (window.saveUserDataToFirebase) {
                 window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
             }
-            window.startGame();
+            window.startGame(checkpointStage);
         };
 
         window.showMainMenu = function() {
