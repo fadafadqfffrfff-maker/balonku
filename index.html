@@ -97,23 +97,23 @@
             justify-content: space-between;
             padding: 10px;
         }
-
-        .hud {
-            display: flex;
-            justify-content: space-between;
-            color: #fff;
-            text-shadow: 2px 2px #000;
-            font-size: 9px;
-            z-index: 5;
-            gap: 4px;
-            margin-top: 35px;
-        }
-
+        /* ... existing styles ... */
         .hud-item {
             background: rgba(0, 0, 0, 0.7);
             padding: 6px 8px;
             border: 2px solid #fff;
             border-radius: 4px;
+        }
+
+        .buff-badge {
+            color: #f1c40f;
+            border-color: #f1c40f;
+            animation: pulseBuff 1s infinite alternate;
+        }
+
+        @keyframes pulseBuff {
+            from { box-shadow: 0 0 2px #f1c40f; }
+            to { box-shadow: 0 0 8px #f1c40f; }
         }
 
         .item-bar {
@@ -417,6 +417,7 @@
             <div class="hud" id="hud" style="display: none;">
                 <div class="hud-item" id="dist-ui">0 M</div>
                 <div class="hud-item" id="coin-ui">🪙 0</div>
+                <div class="hud-item buff-badge hidden" id="buff-ui">⚡ 2x 10:00</div>
                 <div class="hud-item" id="stage-ui">STAGE 1</div>
             </div>
 
@@ -958,6 +959,12 @@
                 localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
                 msg.style.color = '#2ecc71';
                 msg.innerText = 'BERHASIL! +1 Item Meteor 2x didapatkan!';
+            } else if (input === 'LYYENAK') {
+                activateCoinMultiplier(2, 600); // 10 menit = 600 detik
+                window.redeemedCodes.push(input);
+                localStorage.setItem('balon_redeemed_codes', JSON.stringify(window.redeemedCodes));
+                msg.style.color = '#2ecc71';
+                msg.innerText = 'BERHASIL! Koin 2x aktif selama 10 Menit!';
             } else {
                 msg.style.color = '#e74c3c';
                 msg.innerText = 'Kode tidak valid!';
@@ -1007,6 +1014,15 @@
         let immunityFrames = 0; // Kebal setelah revive
         let totemBlastFrames = 0; // Efek Kilatan Totem
 
+        // SYSTEM BOOSTER KOIN MULTIPLIER
+        let activeCoinMultiplier = 1;
+        let coinMultiplierTimeRemaining = 0; // dalam detik
+
+        function activateCoinMultiplier(multiplier, durationSeconds) {
+            activeCoinMultiplier = Math.max(activeCoinMultiplier, multiplier);
+            coinMultiplierTimeRemaining = Math.max(coinMultiplierTimeRemaining, durationSeconds);
+        }
+
         let inventory = {
             shield_blue: 0,
             shield_yellow: 0,
@@ -1016,7 +1032,10 @@
             meteor_1: 0,
             meteor_2: 0,
             star: 0,
-            lightspeed: 0
+            lightspeed: 0,
+            coin_2x: 0,
+            coin_5x: 0,
+            coin_10x: 0
         };
 
         const SHOP_ITEMS = [
@@ -1028,7 +1047,10 @@
             { id: 'meteor_1', name: 'Meteor (1x)', price: 25000, desc: 'Bercahaya & melaju +5.000 Meter' },
             { id: 'meteor_2', name: 'Meteor (2x)', price: 45000, desc: 'Bercahaya & melaju +10.000 Meter' },
             { id: 'star', name: 'Mode Bintang', price: 250000, desc: 'Jadi Bintang berekor +100.000 Meter' },
-            { id: 'lightspeed', name: 'Kecepatan Cahaya', price: 800000, desc: 'Melaju instan ke 498.000 Meter!' }
+            { id: 'lightspeed', name: 'Kecepatan Cahaya', price: 800000, desc: 'Melaju instan ke 498.000 Meter!' },
+            { id: 'coin_2x', name: 'Koin 2x (30 Mnt)', price: 20000, desc: 'Pendapatan koin 2x lipat selama 30 menit' },
+            { id: 'coin_5x', name: 'Koin 5x (30 Mnt)', price: 60000, desc: 'Pendapatan koin 5x lipat selama 30 menit' },
+            { id: 'coin_10x', name: 'Koin 10x (30 Mnt)', price: 180000, desc: 'Pendapatan koin 10x lipat selama 30 menit' }
         ];
 
         let keys = { left: false, right: false };
@@ -1278,6 +1300,12 @@
                     boostSpeedFactor = 120;
                     activeBoostType = 'light';
                 }
+            } else if (id === 'coin_2x') {
+                activateCoinMultiplier(2, 1800); // 30 menit
+            } else if (id === 'coin_5x') {
+                activateCoinMultiplier(5, 1800); // 30 menit
+            } else if (id === 'coin_10x') {
+                activateCoinMultiplier(10, 1800); // 30 menit
             }
 
             renderInGameItemBar();
@@ -1360,6 +1388,14 @@
             if (immunityFrames > 0) immunityFrames--;
             if (totemBlastFrames > 0) totemBlastFrames--;
 
+            if (coinMultiplierTimeRemaining > 0) {
+                coinMultiplierTimeRemaining -= (1 / 60); // Kurangi per frame (~60 FPS)
+                if (coinMultiplierTimeRemaining <= 0) {
+                    coinMultiplierTimeRemaining = 0;
+                    activeCoinMultiplier = 1;
+                }
+            }
+
             let currentSpeed = SPEED_PER_FRAME;
             if (boostMetersRemaining > 0) {
                 currentSpeed *= boostSpeedFactor;
@@ -1371,16 +1407,27 @@
             }
 
             distanceMeters += currentSpeed;
-            sessionCoinsGained = Math.floor(distanceMeters);
+            sessionCoinsGained += currentSpeed * activeCoinMultiplier;
 
             document.getElementById('dist-ui').innerText = Math.floor(distanceMeters).toLocaleString('id-ID') + " M";
-            document.getElementById('coin-ui').innerText = "🪙 " + (window.totalCoins + sessionCoinsGained).toLocaleString('id-ID');
+            document.getElementById('coin-ui').innerText = "🪙 " + (window.totalCoins + Math.floor(sessionCoinsGained)).toLocaleString('id-ID');
             document.getElementById('stage-ui').innerText = "STAGE " + stage.id;
+
+            const buffUi = document.getElementById('buff-ui');
+            if (activeCoinMultiplier > 1 && coinMultiplierTimeRemaining > 0) {
+                const mins = Math.floor(coinMultiplierTimeRemaining / 60);
+                const secs = Math.floor(coinMultiplierTimeRemaining % 60);
+                const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                buffUi.innerText = `⚡ ${activeCoinMultiplier}x ${timeStr}`;
+                buffUi.classList.remove('hidden');
+            } else {
+                buffUi.classList.add('hidden');
+            }
 
             if (distanceMeters >= 499000) {
                 gameState = 'WIN';
                 stopBGM();
-                window.totalCoins += sessionCoinsGained;
+                window.totalCoins += Math.floor(sessionCoinsGained);
                 window.updateCoinsUI();
                 if (window.saveUserDataToFirebase) {
                     window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
@@ -1561,13 +1608,13 @@
             stopBGM();
             playExplosionSFX();
 
-            const currentTotalCoins = window.totalCoins + sessionCoinsGained;
+            const currentTotalCoins = window.totalCoins + Math.floor(sessionCoinsGained);
 
             ctx.fillStyle = '#e74c3c';
             ctx.fillRect(balloon.x - 10, balloon.y - 10, 40, 40);
 
             document.getElementById('final-dist').innerText = "Ketinggian: " + Math.floor(distanceMeters).toLocaleString('id-ID') + " Meter";
-            document.getElementById('final-coins').innerText = "+ " + sessionCoinsGained.toLocaleString('id-ID') + " Koin Didapat!";
+            document.getElementById('final-coins').innerText = "+ " + Math.floor(sessionCoinsGained).toLocaleString('id-ID') + " Koin Didapat!";
             
             // Cek ketersediaan koin untuk Revive
             const reviveBtn = document.getElementById('revive-btn');
@@ -1585,13 +1632,14 @@
         }
 
         window.attemptRevive = function() {
-            const totalAvailableCoins = window.totalCoins + sessionCoinsGained;
+            const gainedFloor = Math.floor(sessionCoinsGained);
+            const totalAvailableCoins = window.totalCoins + gainedFloor;
             if (totalAvailableCoins >= 2000) {
                 // Potong 2.000 Koin
-                if (sessionCoinsGained >= 2000) {
+                if (gainedFloor >= 2000) {
                     sessionCoinsGained -= 2000;
                 } else {
-                    const remainingCost = 2000 - sessionCoinsGained;
+                    const remainingCost = 2000 - gainedFloor;
                     sessionCoinsGained = 0;
                     window.totalCoins -= remainingCost;
                 }
@@ -1613,7 +1661,7 @@
         };
 
         window.resetGame = function() {
-            window.totalCoins += sessionCoinsGained;
+            window.totalCoins += Math.floor(sessionCoinsGained);
             window.updateCoinsUI();
             if (window.saveUserDataToFirebase) {
                 window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
@@ -1624,7 +1672,7 @@
         window.showMainMenu = function() {
             gameState = 'START';
             stopBGM();
-            window.totalCoins += sessionCoinsGained;
+            window.totalCoins += Math.floor(sessionCoinsGained);
             window.updateCoinsUI();
             if (window.saveUserDataToFirebase) {
                 window.saveUserDataToFirebase(distanceMeters, window.totalCoins);
